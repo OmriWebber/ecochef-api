@@ -3,7 +3,12 @@ from datetime import datetime
 from sqlalchemy import Column, ForeignKey, Integer, Table, String, Boolean, Text, DateTime
 from sqlalchemy import ARRAY
 from sqlalchemy.orm import declarative_base, relationship
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from extensions import db
+
+migrate = Migrate()
+
 
 # Users Table Model
 class Users(UserMixin, db.Model):
@@ -12,19 +17,38 @@ class Users(UserMixin, db.Model):
     username = Column(String(50), nullable=False)
     password = Column(String(256), nullable=False)
     email = Column(String(100), nullable=False)
-    savedRecipes = relationship("savedUserRecipes", backref='savedUserRecipes', cascade='all, delete')
+    likes = relationship("Likes", backref='user', cascade='all, delete')
     shoppingList = relationship("shoppingList", backref='shoppingList', cascade='all, delete')
     is_Admin = Column(Boolean, nullable=False, default=False)
+    is_active = Column(Boolean, nullable=False, default=True)
     dateCreated = Column(DateTime, default=datetime.utcnow)
+    
+    def save_recipe(self, recipe):
+        if not self.is_saved(recipe):
+            like = Likes(user_id=self.id, recipe_id=recipe.id)
+            db.session.add(like)
+    
+    def unsave_recipe(self, recipe):
+        if self.is_saved(recipe):
+            Likes.query.filter(
+                Likes.recipe_id == recipe.id,
+                Likes.user_id == self.id).delete()
+            
+    def is_saved(self, recipe):
+        return Likes.query.filter(
+            Likes.recipe_id == recipe.id,
+            Likes.user_id == self.id).count() > 0
     
     def format(self):
         return {
             'id': self.id,
             'username': self.username,
             'password': self.password,
-            'savedRecipes': [recipe.format() for recipe in self.savedRecipes],
+            'email': self.email,
+            'likes': [recipe.format() for recipe in self.likes],
             'shoppingList': [item.format() for item in self.shoppingList],
             'is_Admin': self.is_Admin,
+            'is_active': self.is_active,
             'dateCreated': self.dateCreated
         }
 
@@ -43,6 +67,7 @@ class Recipes(db.Model):
     servings = Column(String(50), nullable=True)
     ingredients = relationship("Ingredients", backref='recipe', cascade='all, delete-orphan')
     reviews = relationship("Reviews", backref='recipe', cascade='all, delete-orphan')
+    likes = relationship("Likes", backref='recipe', cascade='all, delete-orphan')
     ratingAvg = Column(String(10), nullable=True)
     ratingCount = Column(String(10), nullable=True)
     nutrition = relationship("Nutrition", backref='recipe', cascade='all, delete-orphan')
@@ -62,6 +87,7 @@ class Recipes(db.Model):
             'cookTime': self.cookTime,
             'servings': self.servings,
             'reviews': [review.format() for review in self.reviews],
+            'likes': [like.format() for like in self.likes],
             'ratingAvg': self.ratingAvg,
             'ratingCount': self.ratingCount,
             'nutrition': [nutrition.format() for nutrition in self.nutrition],
@@ -153,11 +179,11 @@ class shoppingList(db.Model):
     
     
 # SavedRecipes Table Model
-class savedUserRecipes(db.Model):
-    __tablename__= "savedUserRecipes"
+class Likes(db.Model):
+    __tablename__= "Likes"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("Users.id"))
-    recipe_id = Column(Integer)
+    recipe_id = Column(Integer, ForeignKey("Recipes.id"))
     
     def format(self):
         return {

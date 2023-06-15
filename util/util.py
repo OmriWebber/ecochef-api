@@ -41,8 +41,8 @@ def populate():
         category = recipe.category
         ratingAvg = recipe.aggregate_rating.rating_value
         ratingCount = recipe.aggregate_rating.rating_count
-        prepTime = recipe.prep_time
-        cookTime = recipe.cook_time
+        prepTime = convertTime(recipe.prep_time)
+        cookTime = convertTime(recipe.cook_time)
         servings = recipe.servings
         dateCreated = recipe.date_published
         
@@ -109,3 +109,14 @@ def populate():
         db.session.add(new_recipe)
         db.session.commit()
     f.close()
+    
+def convertTime(time):
+    if time is not None:
+        minutes_str = time[2:-1]
+        if minutes_str.isdigit():
+            minutes = int(minutes_str)
+            return minutes
+        else:
+            return "Invalid time format"
+    else:
+        return "0"

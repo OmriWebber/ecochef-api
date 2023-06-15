@@ -2,12 +2,19 @@
 import os
 
 class Config:
-    DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'mysql://root:@localhost:3306/ecochef-api'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = 'ecochef'
     JWT_ERROR_MESSAGE_KEY = 'message'
     JWT_BLACKLIST_ENABLED = True
     JWT_BLACKLIST_TOKEN_CHECKS = ['access', 'refresh']
-    UPLOAD_FOLDER = 'static/images'
     ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
+
+    if 'RDS_HOSTNAME' in os.environ:
+        print('AWS ELB ENV DETECTED')
+        RDS_Connection_String = 'mysql+pymysql://' + os.environ['RDS_USERNAME'] + ':' + os.environ['RDS_PASSWORD'] + '@' + os.environ['RDS_HOSTNAME'] + ':' + os.environ['RDS_PORT'] + '/' + os.environ['RDS_DB_NAME']
+        SQLALCHEMY_DATABASE_URI = RDS_Connection_String
+    else:
+        print('No Database Detected, using local database')
+        SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://admin:password@awseb-e-se9mvmarj8-stack-awsebrdsdatabase-dqxbsdaj1jfa.ch0or1bnad8y.ap-southeast-2.rds.amazonaws.com:3306'
+        
+        
