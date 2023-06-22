@@ -4,7 +4,7 @@ from config import Config
 from models import *
 from functools import wraps
 from util import util
-import datetime, jwt, json, random
+import datetime, jwt, json, random, base64
 from extensions import db, ma, migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
@@ -64,16 +64,18 @@ def register_resources(application):
     @application.route('/user/favourites', methods=['GET'])
     @token_required
     def get_user_favourites(current_user):
-        print(current_user.likes)
+        recipes = []
         likes = current_user.likes
-        favourites = []
         for like in likes: 
-            print(like.recipe_id)
-        recipes = Recipes.query.filter(Recipes.id.in_(likes.recipe_id)).all()
+            recipes.append(like.recipe_id)
         print(recipes)
-        if not recipes:
+        if recipes:
+            favourites = Recipes.query.filter(Recipes.id.in_(recipes)).all()
+        else:
             return jsonify({'recipes' : 'User has no likes!', 'status': 0})
-        return jsonify({'recipes' : recipes.format(), 'status': 200})
+        if not favourites:
+            return jsonify({'recipes' : 'User has no likes!', 'status': 0})
+        return jsonify({'recipes' : [favourite.format() for favourite in favourites], 'status': 200})
     
     @application.route('/currentuser', methods=['GET'])
     @token_required
@@ -92,7 +94,7 @@ def register_resources(application):
         return jsonify({'message' : 'New user created!', 'status': 200})
 
 
-    @application.route('/promoteuser/<id>', methods=['PUT'])
+    @application.route('/promoteuser/<id>', methods=['POST'])
     @token_required
     def promote_user(current_user, id):
         if not current_user.is_Admin:
@@ -104,7 +106,7 @@ def register_resources(application):
         db.session.commit()
         return jsonify({'message' : 'The user has been promoted!', 'status': 200})
 
-    @application.route('/demoteuser/<id>', methods=['PUT'])
+    @application.route('/demoteuser/<id>', methods=['POST'])
     @token_required
     def demote_user(current_user, id):
         if not current_user.is_Admin:
@@ -139,7 +141,7 @@ def register_resources(application):
         if not user:
             return make_response('Could not verify', 401, {'WWW-Authenticate' : 'Basic realm="Login required!"'})
         if check_password_hash(user.password, auth.password):
-            token = jwt.encode({'id' : user.id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(days=1)}, Config.SECRET_KEY, algorithm="HS256")
+            token = jwt.encode({'id' : user.id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(days=1)}, Config.SECRET_KEY, algorithm="HS256").decode('utf-8')
             return jsonify({'token' : token})
         return make_response('Could not verify', 401, {'WWW-Authenticate' : 'Basic realm="Login required!"'})
 
@@ -305,6 +307,6 @@ register_resources(application)
 
 if __name__ == '__main__':
     application.debug = True
-    application.run()
+    application.run(port=4000)
     
 

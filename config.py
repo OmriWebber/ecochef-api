@@ -15,6 +15,6 @@ class Config:
         SQLALCHEMY_DATABASE_URI = RDS_Connection_String
     else:
         print('No Database Detected, using local database')
-        SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://admin:password@awseb-e-se9mvmarj8-stack-awsebrdsdatabase-dqxbsdaj1jfa.ch0or1bnad8y.ap-southeast-2.rds.amazonaws.com:3306/ecochefapi'
+        SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://admin:password@ecochef-api.ch0or1bnad8y.ap-southeast-2.rds.amazonaws.com:3306/ecochef_api'
         # SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root@localhost:3306/ecochef-api'
         
