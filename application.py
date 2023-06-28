@@ -68,7 +68,6 @@ def register_resources(application):
         likes = current_user.likes
         for like in likes: 
             recipes.append(like.recipe_id)
-        print(recipes)
         if recipes:
             favourites = Recipes.query.filter(Recipes.id.in_(recipes)).all()
         else:
@@ -159,11 +158,24 @@ def register_resources(application):
     @application.route('/search/ingredients', methods=['GET'])
     def searchByIngredients():
         inputIngredients = request.get_json()['ingredients']
-        results = Recipes.query.filter(Recipes.ingredients.any(Ingredients.name.in_(inputIngredients))).all()
-        formated_results = []
-        for result in results:
-            formated_results.append(result.format())
-        return jsonify({'results' : formated_results, 'status': 200})
+        recipes = Recipes.query.filter(Recipes.ingredients.any(Ingredients.name.in_(inputIngredients))).all()
+        
+        results = []
+        for recipe in recipes:
+            ingredientList = []
+            for ing in recipe.ingredients:
+                ingredientList.append(ing.name)
+                
+            match_score = sum(1 for ingredient in inputIngredients if ingredient in ingredientList)
+            
+            results.append({
+                'recipe': recipe.format(),
+                'match_score': match_score
+            })
+        # Sort results based on match score in descending order
+        results.sort(key=lambda x: x['match_score'], reverse=True)
+    
+        return jsonify({'results' : results, 'status': 200})
         
 
     @application.route('/recipes', methods=['GET'])
@@ -306,7 +318,7 @@ register_extensions(application)
 register_resources(application)
 
 if __name__ == '__main__':
-    application.debug = True
+    application.debug = True 
     application.run(port=4000)
     
 

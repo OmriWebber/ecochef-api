@@ -27,10 +27,10 @@ def logThis(function, user, userID, recipe, recipeID):
         
                
 def populate():
-    with open('allrecipes.json', 'rb') as f:
+    with open('ecochef.json', 'rb') as f:
         result = chardet.detect(f.read())
 
-    with open('allrecipes.json', encoding=result['encoding']) as f:
+    with open('ecochef.json', encoding=result['encoding']) as f:
         data = json.load(f)
     
     for count, i in enumerate(data):
@@ -58,10 +58,9 @@ def populate():
             
         
         # Get Video Url
-        try:
-            if recipe.video and recipe.video != 'No Video':
-                videoURL = recipe.video.embed_url
-        except:
+        if recipe.video and recipe.video != 'No Video':
+            videoURL = recipe.video.embed_url
+        else:
             videoURL = 'No Video'
             
         
